@@ -113,11 +113,19 @@ class MakkoEngineInput {
       this._mouseDown = true;
     });
     canvas.addEventListener('touchend', () => { this._mouseDown = false; });
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      this.mouseX = (touch.clientX - rect.left) * (1920 / rect.width);
+      this.mouseY = (touch.clientY - rect.top) * (1080 / rect.height);
+    });
     window.addEventListener('keydown', (e) => { this._keys[e.key] = true; });
     window.addEventListener('keyup', (e) => { this._keys[e.key] = false; });
   }
   isKeyPressed(key) { return this._keysJustPressed[key] || false; }
   isMouseDown() { return this._mouseDown; }
+  isPointerDown() { return this._mouseDown; }
   endFrame() { this._keysJustPressed = {}; }
   capture() {}
   getPointerPosition() { return { x: this.mouseX, y: this.mouseY }; }
@@ -311,7 +319,7 @@ class StartScene {
     const p = MakkoEngine.input.getPointerPosition();
     if (p) {
       this.startBtn.hover = p.x >= this.startBtn.x && p.x <= this.startBtn.x + this.startBtn.w && p.y >= this.startBtn.y && p.y <= this.startBtn.y + this.startBtn.h;
-      if (this.startBtn.hover && MakkoEngine.input.isKeyPressed('Space')) this.game.switchScene('menu');
+      if (this.startBtn.hover && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
     }
     if (MakkoEngine.input.isKeyPressed('Enter') || MakkoEngine.input.isKeyPressed('Space')) this.game.switchScene('menu');
   }
@@ -344,7 +352,7 @@ class MenuScene {
     const p = MakkoEngine.input.getPointerPosition();
     if (p) this.buttons.forEach(btn => {
       btn.hover = p.x >= btn.x && p.x <= btn.x + btn.w && p.y >= btn.y && p.y <= btn.y + btn.h;
-      if (btn.hover && MakkoEngine.input.isKeyPressed('Space')) this.game.switchScene(btn.scene);
+      if (btn.hover && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene(btn.scene);
     });
   }
   update(dt) {}
@@ -371,7 +379,9 @@ class WorldScene {
   }
   handleInput() {
     if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
-    if (MakkoEngine.input.isKeyPressed('Space') && MakkoEngine.input.mouseX > 0) {
+    const p = MakkoEngine.input.getPointerPosition();
+    if (p && p.x >= 20 && p.x <= 140 && p.y >= 20 && p.y <= 65 && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) { this.game.switchScene('menu'); return; }
+    if ((MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown()) && MakkoEngine.input.mouseX > 0) {
       const mx = MakkoEngine.input.mouseX, my = MakkoEngine.input.mouseY;
       if (mx > 150 || my > 80) {
         const dx = mx - this.playerX, dy = my - this.playerY, dist = Math.sqrt(dx * dx + dy * dy);
@@ -441,7 +451,7 @@ class BattleScene {
       { x: 560, y: 900, w: 150, h: 50, type: 'flee' }
     ];
     actions.forEach(act => {
-      if (p.x >= act.x && p.x <= act.x + act.w && p.y >= act.y && p.y <= act.y + act.h && MakkoEngine.input.isKeyPressed('Space')) {
+      if (p.x >= act.x && p.x <= act.x + act.w && p.y >= act.y && p.y <= act.y + act.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) {
         if (act.type === 'attack') this.doAttack();
         else if (act.type === 'capture') this.tryCapture();
         else if (act.type === 'defend') this.getPlayerMonster().isDefending = true;
@@ -568,7 +578,11 @@ class BattleScene {
 class PartyScene {
   constructor(g) { this.game = g; this.id = 'party'; }
   enter() {}
-  handleInput() { if (MakkoEngine.input.isKeyPressed('Escape')) this.game.switchScene('menu'); }
+  handleInput() {
+    if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
+    const p = MakkoEngine.input.getPointerPosition();
+    if (p && p.x >= 20 && p.x <= 140 && p.y >= 20 && p.y <= 65 && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
+  }
   update(dt) {}
   render() {
     const d = MakkoEngine.display;
@@ -603,8 +617,12 @@ class PartyScene {
 
 class ShopScene {
   constructor(g) { this.game = g; this.id = 'shop'; }
-  enter() {}
-  handleInput() { if (MakkoEngine.input.isKeyPressed('Escape')) this.game.switchScene('menu'); }
+  enter() { this.backBtn = { x: 20, y: 20, w: 120, h: 45 }; }
+  handleInput() {
+    if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
+    const p = MakkoEngine.input.getPointerPosition();
+    if (p && p.x >= this.backBtn.x && p.x <= this.backBtn.x + this.backBtn.w && p.y >= this.backBtn.y && p.y <= this.backBtn.y + this.backBtn.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
+  }
   update(dt) {}
   render() {
     const d = MakkoEngine.display, econ = this.game.economySystem;
@@ -635,8 +653,12 @@ class ShopScene {
 
 class PvPArenaScene {
   constructor(g) { this.game = g; this.id = 'pvp'; this.isSearching = false; this.searchTime = 0; }
-  enter() { this.isSearching = false; this.searchTime = 0; }
-  handleInput() { if (MakkoEngine.input.isKeyPressed('Escape')) this.game.switchScene('menu'); }
+  enter() { this.isSearching = false; this.searchTime = 0; this.backBtn = { x: 20, y: 20, w: 120, h: 45 }; }
+  handleInput() {
+    if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
+    const p = MakkoEngine.input.getPointerPosition();
+    if (p && p.x >= this.backBtn.x && p.x <= this.backBtn.x + this.backBtn.w && p.y >= this.backBtn.y && p.y <= this.backBtn.y + this.backBtn.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
+  }
   update(dt) {
     if (this.isSearching) {
       this.searchTime += dt / 1000;
@@ -673,8 +695,12 @@ class PvPArenaScene {
 
 class SettingsScene {
   constructor(g) { this.game = g; this.id = 'settings'; }
-  enter() {}
-  handleInput() { if (MakkoEngine.input.isKeyPressed('Escape')) this.game.switchScene('menu'); }
+  enter() { this.backBtn = { x: 20, y: 20, w: 120, h: 45 }; }
+  handleInput() {
+    if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
+    const p = MakkoEngine.input.getPointerPosition();
+    if (p && p.x >= this.backBtn.x && p.x <= this.backBtn.x + this.backBtn.w && p.y >= this.backBtn.y && p.y <= this.backBtn.y + this.backBtn.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
+  }
   update(dt) {}
   render() {
     const d = MakkoEngine.display, cx = d.width / 2;
