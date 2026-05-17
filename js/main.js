@@ -137,17 +137,13 @@ window.MakkoEngine = { display: new MakkoEngineDisplay(), input: new MakkoEngine
 window.MakkoEngine.initEngine = async function(options) {
   this.display.canvas = options.canvas;
   this.display._ctx = options.canvas.getContext('2d');
-  // Keep internal resolution fixed at 1920x1080
   options.canvas.width = 1920;
   options.canvas.height = 1080;
   this.display.width = 1920;
   this.display.height = 1080;
-  // Scale canvas element to fill the viewport completely
-  const scaleX = window.innerWidth / 1920;
-  const scaleY = window.innerHeight / 1080;
-  const scale = Math.max(scaleX, scaleY);
-  options.canvas.style.width = `${Math.round(1920 * scale)}px`;
-  options.canvas.style.height = `${Math.round(1080 * scale)}px`;
+  // Fill viewport completely with CSS, maintaining aspect ratio
+  options.canvas.style.width = '100vw';
+  options.canvas.style.height = 'auto';
   this.input.init(options.canvas);
   return true;
 };
@@ -337,7 +333,7 @@ class StartScene {
   render() {
     const d = MakkoEngine.display, cx = d.width / 2, ty = d.height * 0.25;
     const scale = Math.min(d.width / 800, d.height / 600);
-    const uiScale = Math.max(0.5, Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+    const uiScale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     d.clear('#1a1a2e');
     d.drawCircle(cx, ty + 60, 180 * uiScale, { fill: '#16213e', stroke: '#e94560', lineWidth: Math.max(2, 3 * uiScale) });
     d.drawCircle(cx, ty + 60, 160 * uiScale, { stroke: '#3b82f6', lineWidth: 2 });
