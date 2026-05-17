@@ -137,9 +137,11 @@ window.MakkoEngine = { display: new MakkoEngineDisplay(), input: new MakkoEngine
 window.MakkoEngine.initEngine = async function(options) {
   this.display.canvas = options.canvas;
   this.display._ctx = options.canvas.getContext('2d');
-  const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-  options.canvas.width = 1920; options.canvas.height = 1080;
-  options.canvas.style.width = `${1920 * scale}px`; options.canvas.style.height = `${1080 * scale}px`;
+  const w = window.innerWidth, h = window.innerHeight;
+  const scale = Math.min(w / 1920, h / 1080);
+  options.canvas.width = w; options.canvas.height = h;
+  this.display.width = w; this.display.height = h;
+  options.canvas.style.width = `${w}px`; options.canvas.style.height = `${h}px`;
   this.input.init(options.canvas);
   return true;
 };
