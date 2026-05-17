@@ -335,25 +335,22 @@ class StartScene {
   }
   update(dt) { this.bounceTime += dt / 1000; }
   render() {
-    const d = MakkoEngine.display, cx = d.width / 2, ty = d.height * 0.25;
-    const scale = Math.min(d.width / 800, d.height / 600);
-    // Scale UI up on small screens, down on large ones
-    // Use canvas CSS pixel size so it matches actual rendered dimensions
+    const d = MakkoEngine.display, cx = d.width / 2;
     const canvasW = MakkoEngine.input.getCanvasPixelWidth();
-    const canvasH = MakkoEngine.display.height * (canvasW / MakkoEngine.display.width);
-    const uiScale = Math.max(0.5, Math.min(1920 / Math.max(canvasW, 600), 2.0));
+    const canvasH = d.height * (canvasW / d.width);
+    const uiScale = Math.min(d.width / Math.max(canvasW, 600), d.height / Math.max(canvasH, 400));
     d.clear('#1a1a2e');
-    d.drawCircle(cx, ty + 60, 180 * uiScale, { fill: '#16213e', stroke: '#e94560', lineWidth: Math.max(2, 3 * uiScale) });
-    d.drawCircle(cx, ty + 60, 160 * uiScale, { stroke: '#3b82f6', lineWidth: 2 });
-    d.drawText('Monster Tamer', cx - 160 * uiScale, ty, { font: `bold ${Math.round(56 * uiScale)}px system-ui`, fill: '#e94560' });
-    d.drawText('Build your team. Catch them all!', cx - 140 * uiScale, ty + 50 * uiScale, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#888888' });
-    const iconSpacing = 45 * uiScale;
-    ['🔥', '💧', '🌿', '⚡', '🐾'].forEach((icon, i) => d.drawText(icon, cx - iconSpacing * 2.5 + i * iconSpacing, ty + 110 * uiScale, { font: `${Math.round(28 * uiScale)}px system-ui` }));
-    const btnW = 280 * uiScale, btnH = 80 * uiScale;
+    const ty = d.height * 0.22;
+    d.drawCircle(cx, ty + 60, 180, { fill: '#16213e', stroke: '#e94560', lineWidth: 3 });
+    d.drawCircle(cx, ty + 60, 160, { stroke: '#3b82f6', lineWidth: 2 });
+    d.drawText('Monster Tamer', cx - 160, ty, { font: `bold ${Math.round(56 * uiScale)}px system-ui`, fill: '#e94560' });
+    d.drawText('Build your team. Catch them all!', cx - 140, ty + 50, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#888888' });
+    ['🔥', '💧', '🌿', '⚡', '🐾'].forEach((icon, i) => d.drawText(icon, cx - 110 + i * 50, ty + 110, { font: `${Math.round(28 * uiScale)}px system-ui` }));
+    const btnW = Math.max(160, 280 * uiScale), btnH = Math.max(45, 80 * uiScale);
     this.startBtn.x = cx - btnW / 2; this.startBtn.y = d.height * 0.65; this.startBtn.w = btnW; this.startBtn.h = btnH;
     d.drawRoundRect(this.startBtn.x, this.startBtn.y, this.startBtn.w, this.startBtn.h, 8, { fill: this.startBtn.hover ? '#2563eb' : '#3b82f6' });
-    d.drawText('▶ Start Game', this.startBtn.x + btnW / 2 - 70 * uiScale, this.startBtn.y + btnH / 2 + 8, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
-    d.drawText('Tap to start', cx - 60 * uiScale, d.height - 40, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#555555' });
+    d.drawText('▶ Start Game', this.startBtn.x + 55, this.startBtn.y + btnH / 2 + 8, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText('Tap to start', cx - 60, d.height - 40, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#555555' });
   }
 }
 
@@ -473,13 +470,14 @@ class BattleScene {
     if (this.resultState !== 'none') return;
     const p = MakkoEngine.input.getPointerPosition();
     if (!p || !p.x || !p.y) return;
-    const scale = Math.min(MakkoEngine.display.width / 800, MakkoEngine.display.height / 600);
-    const uiScale = Math.max(0.5, scale);
-    const actionBarY = MakkoEngine.display.height * 0.83;
-    const actionW = 130 * uiScale, actionH = 45 * uiScale, actionGap = 8 * uiScale;
+    const canvasW = MakkoEngine.input.getCanvasPixelWidth();
+    const canvasH = MakkoEngine.display.height * (canvasW / MakkoEngine.display.width);
+    const uiScale = Math.min(MakkoEngine.display.width / Math.max(canvasW, 600), MakkoEngine.display.height / Math.max(canvasH, 400));
+    const actionBarY = MakkoEngine.display.height * 0.58;
+    const actionW = Math.min(150, MakkoEngine.display.width * 0.17), actionH = Math.min(55, MakkoEngine.display.height * 0.06), actionGap = Math.min(12, MakkoEngine.display.width * 0.015);
     const totalActionsW = 4 * actionW + 3 * actionGap;
     const actionStartX = (MakkoEngine.display.width - totalActionsW) / 2;
-    const actionY = actionBarY + 20 * uiScale;
+    const actionY = actionBarY + 15;
     const actionTypes = ['attack', 'capture', 'defend', 'flee'];
     actionTypes.forEach((type, i) => {
       const ax = actionStartX + i * (actionW + actionGap);
@@ -556,51 +554,52 @@ class BattleScene {
   }
   render() {
     const d = MakkoEngine.display;
-    const scale = Math.min(d.width / 800, d.height / 600);
-    const uiScale = Math.max(0.5, scale);
+    const canvasW = MakkoEngine.input.getCanvasPixelWidth();
+    const canvasH = d.height * (canvasW / d.width);
+    const uiScale = Math.min(d.width / Math.max(canvasW, 600), d.height / Math.max(canvasH, 400));
     d.clear('#1a1a2e');
-    d.drawRect(0, 0, d.width, 380 * uiScale, { fill: '#16213e' });
-    d.drawRect(0, 380 * uiScale, d.width, 180 * uiScale, { fill: '#1e3a1e' });
+    d.drawRect(0, 0, d.width, d.height * 0.35, { fill: '#16213e' });
+    d.drawRect(0, d.height * 0.35, d.width, d.height * 0.2, { fill: '#1e3a1e' });
     
     const p = this.getPlayerMonster(), e = this.getEnemyMonster();
     
     if (e) {
       const def = MONSTER_DEFINITIONS[e.id];
-      d.drawCircle(d.width * 0.82, d.height * 0.32, 70 * uiScale, { fill: '#444466' });
+      d.drawCircle(d.width * 0.82, d.height * 0.32, 70, { fill: '#444466' });
       d.drawText(def.name, d.width * 0.72, 40, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
       d.drawText(`Lv${e.level}`, d.width * 0.72, 68, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#888888' });
       const hpPct = e.currentHp / e.maxHp;
-      d.drawRoundRect(d.width * 0.72, 96, 180 * uiScale, 18, 4, { fill: '#333333' });
-      d.drawRoundRect(d.width * 0.72, 96, 180 * uiScale * hpPct, 18, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
+      d.drawRoundRect(d.width * 0.72, 96, 180, 18, 4, { fill: '#333333' });
+      d.drawRoundRect(d.width * 0.72, 96, 180 * hpPct, 18, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
     }
     
     if (p) {
       const def = MONSTER_DEFINITIONS[p.id];
-      d.drawCircle(d.width * 0.18, d.height * 0.62, 90 * uiScale, { fill: '#e94560' });
-      d.drawCircle(d.width * 0.18 - 8, d.height * 0.62 - 8, 10 * uiScale, { fill: '#ffffff' });
-      d.drawCircle(d.width * 0.18 + 8, d.height * 0.62 - 8, 10 * uiScale, { fill: '#ffffff' });
+      d.drawCircle(d.width * 0.18, d.height * 0.62, 90, { fill: '#e94560' });
+      d.drawCircle(d.width * 0.18 - 8, d.height * 0.62 - 8, 10, { fill: '#ffffff' });
+      d.drawCircle(d.width * 0.18 + 8, d.height * 0.62 - 8, 10, { fill: '#ffffff' });
       d.drawText(def.name, d.width * 0.06, d.height * 0.85, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
       d.drawText(`Lv${p.level}`, d.width * 0.06, d.height * 0.88, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#888888' });
       const hpPct = p.currentHp / p.maxHp;
-      d.drawRoundRect(d.width * 0.06, d.height * 0.91, 180 * uiScale, 18, 4, { fill: '#333333' });
-      d.drawRoundRect(d.width * 0.06, d.height * 0.91, 180 * uiScale * hpPct, 18, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
+      d.drawRoundRect(d.width * 0.06, d.height * 0.91, 180, 18, 4, { fill: '#333333' });
+      d.drawRoundRect(d.width * 0.06, d.height * 0.91, 180 * hpPct, 18, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
     }
     
     d.drawText('VS', d.width / 2 - 25, d.height * 0.4, { font: `bold ${Math.round(42 * uiScale)}px system-ui`, fill: '#e94560' });
     
-    const actionBarY = d.height * 0.83;
+    const actionBarY = d.height * 0.58;
     d.drawRect(0, actionBarY, d.width, d.height - actionBarY, { fill: 'rgba(22, 33, 62, 0.95)' });
     d.drawRect(0, actionBarY, d.width, 4, { fill: '#e94560' });
     
-    const actionW = 130 * uiScale, actionH = 45 * uiScale, actionGap = 8 * uiScale;
+    const actionW = Math.min(150, d.width * 0.17), actionH = Math.min(55, d.height * 0.06), actionGap = Math.min(12, d.width * 0.015);
     const totalActionsW = 4 * actionW + 3 * actionGap;
     const actionStartX = (d.width - totalActionsW) / 2;
-    const actionY = actionBarY + 20 * uiScale;
+    const actionY = actionBarY + 15;
     const actions = ['⚔️ Attack', '🪣 Capture', '🛡️ Defend', '🏃 Flee'];
     actions.forEach((label, i) => {
       const ax = actionStartX + i * (actionW + actionGap);
       d.drawRoundRect(ax, actionY, actionW, actionH, 8, { fill: '#3b82f6' });
-      d.drawText(label, ax + actionW / 2 - 45 * uiScale, actionY + actionH / 2 + 5, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
+      d.drawText(label, ax + 20, actionY + actionH / 2 + 5, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
     });
     this.damageNumbers.forEach(dn => d.drawText(dn.text, dn.x - 40, dn.y, { font: `bold ${Math.round(26 * uiScale)}px system-ui`, fill: '#ff4444' }));
     
