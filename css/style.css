@@ -1,4 +1,3 @@
-/* CSS Reset and Base Styles */
 * {
   margin: 0;
   padding: 0;
@@ -8,24 +7,21 @@
 html, body {
   width: 100%;
   height: 100%;
-  background: #000;
   overflow: hidden;
+  background-color: #1a1a2e;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .container {
-  width: 100%;
-  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #000; /* Letterbox background color */
+  width: 100%;
+  height: 100%;
 }
 
-#gameCanvas {
+canvas {
   display: block;
   max-width: 100%;
   max-height: 100%;
-  /* MakkoEngine.display handles width, height, and aspect-ratio */
 }
-
-/* Custom styles below */
