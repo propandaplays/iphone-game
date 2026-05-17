@@ -130,6 +130,10 @@ class MakkoEngineInput {
   isPointerDown() { return this._mouseDown; }
   endFrame() { this._keysJustPressed = {}; }
   capture() {}
+  getCanvasPixelWidth() {
+    const c = this.canvas;
+    return c ? c.getBoundingClientRect().width : 1920;
+  }
   getPointerPosition() { return { x: this.mouseX, y: this.mouseY }; }
 }
 
@@ -333,7 +337,11 @@ class StartScene {
   render() {
     const d = MakkoEngine.display, cx = d.width / 2, ty = d.height * 0.25;
     const scale = Math.min(d.width / 800, d.height / 600);
-    const uiScale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    // Scale UI up on small screens, down on large ones
+    // Use canvas CSS pixel size so it matches actual rendered dimensions
+    const canvasW = MakkoEngine.input.getCanvasPixelWidth();
+    const canvasH = MakkoEngine.display.height * (canvasW / MakkoEngine.display.width);
+    const uiScale = Math.max(0.5, Math.min(1920 / Math.max(canvasW, 600), 2.0));
     d.clear('#1a1a2e');
     d.drawCircle(cx, ty + 60, 180 * uiScale, { fill: '#16213e', stroke: '#e94560', lineWidth: Math.max(2, 3 * uiScale) });
     d.drawCircle(cx, ty + 60, 160 * uiScale, { stroke: '#3b82f6', lineWidth: 2 });
