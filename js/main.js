@@ -106,6 +106,7 @@ class MakkoEngineInput {
     canvas.addEventListener('mouseup', () => { this._mouseDown = false; });
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      if (e.touches.length === 0) return;
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       this.mouseX = (touch.clientX - rect.left) * (1920 / rect.width);
@@ -115,12 +116,13 @@ class MakkoEngineInput {
     canvas.addEventListener('touchend', () => { this._mouseDown = false; });
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
+      if (e.touches.length === 0) return;
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       this.mouseX = (touch.clientX - rect.left) * (1920 / rect.width);
       this.mouseY = (touch.clientY - rect.top) * (1080 / rect.height);
     });
-    window.addEventListener('keydown', (e) => { this._keys[e.key] = true; });
+    window.addEventListener('keydown', (e) => { this._keys[e.key] = true; if (!this._keysJustPressed[e.key]) this._keysJustPressed[e.key] = true; });
     window.addEventListener('keyup', (e) => { this._keys[e.key] = false; });
   }
   isKeyPressed(key) { return this._keysJustPressed[key] || false; }
@@ -317,7 +319,7 @@ class StartScene {
   enter() { this.startBtn = { x: MakkoEngine.display.width / 2 - 125, y: MakkoEngine.display.height * 0.65, w: 250, h: 70 }; }
   handleInput() {
     const p = MakkoEngine.input.getPointerPosition();
-    if (p) {
+    if (p && p.x && p.y) {
       this.startBtn.hover = p.x >= this.startBtn.x && p.x <= this.startBtn.x + this.startBtn.w && p.y >= this.startBtn.y && p.y <= this.startBtn.y + this.startBtn.h;
       if (this.startBtn.hover && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
     }
@@ -325,16 +327,21 @@ class StartScene {
   }
   update(dt) { this.bounceTime += dt / 1000; }
   render() {
-    const d = MakkoEngine.display, cx = d.width / 2, ty = d.height * 0.3;
+    const d = MakkoEngine.display, cx = d.width / 2, ty = d.height * 0.25;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
     d.clear('#1a1a2e');
-    d.drawCircle(cx, ty + 80, 250, { fill: '#16213e', stroke: '#e94560', lineWidth: 3 });
-    d.drawCircle(cx, ty + 80, 220, { stroke: '#3b82f6', lineWidth: 2 });
-    d.drawText('Monster Tamer', cx - 200, ty, { font: 'bold 72px system-ui', fill: '#e94560' });
-    d.drawText('Build your team. Catch them all!', cx - 180, ty + 60, { font: '24px system-ui', fill: '#888888' });
-    ['🔥', '💧', '🌿', '⚡', '🐾'].forEach((icon, i) => d.drawText(icon, cx - 100 + i * 50, ty + 150, { font: '32px system-ui' }));
+    d.drawCircle(cx, ty + 60, 180 * uiScale, { fill: '#16213e', stroke: '#e94560', lineWidth: Math.max(2, 3 * uiScale) });
+    d.drawCircle(cx, ty + 60, 160 * uiScale, { stroke: '#3b82f6', lineWidth: 2 });
+    d.drawText('Monster Tamer', cx - 160 * uiScale, ty, { font: `bold ${Math.round(56 * uiScale)}px system-ui`, fill: '#e94560' });
+    d.drawText('Build your team. Catch them all!', cx - 140 * uiScale, ty + 50 * uiScale, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#888888' });
+    const iconSpacing = 45 * uiScale;
+    ['🔥', '💧', '🌿', '⚡', '🐾'].forEach((icon, i) => d.drawText(icon, cx - iconSpacing * 2.5 + i * iconSpacing, ty + 110 * uiScale, { font: `${Math.round(28 * uiScale)}px system-ui` }));
+    const btnW = 280 * uiScale, btnH = 80 * uiScale;
+    this.startBtn.x = cx - btnW / 2; this.startBtn.y = d.height * 0.65; this.startBtn.w = btnW; this.startBtn.h = btnH;
     d.drawRoundRect(this.startBtn.x, this.startBtn.y, this.startBtn.w, this.startBtn.h, 8, { fill: this.startBtn.hover ? '#2563eb' : '#3b82f6' });
-    d.drawText('▶ Start Game', this.startBtn.x + 55, this.startBtn.y + 22, { font: 'bold 24px system-ui', fill: '#ffffff' });
-    d.drawText('Press ENTER or tap to start', cx - 100, d.height - 60, { font: '16px system-ui', fill: '#555555' });
+    d.drawText('▶ Start Game', this.startBtn.x + btnW / 2 - 70 * uiScale, this.startBtn.y + btnH / 2 + 8, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText('Tap to start', cx - 60 * uiScale, d.height - 40, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#555555' });
   }
 }
 
@@ -358,16 +365,19 @@ class MenuScene {
   update(dt) {}
   render() {
     const d = MakkoEngine.display, cx = d.width / 2;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
     d.clear('#1a1a2e');
-    d.drawRect(0, 0, d.width, 220, { fill: '#16213e' });
-    d.drawRect(0, 218, d.width, 4, { fill: '#e94560' });
-    d.drawText('Monster Tamer', cx - 180, 80, { font: 'bold 56px system-ui', fill: '#e94560' });
-    d.drawText('Build your team. Catch them all!', cx - 180, 140, { font: '20px system-ui', fill: '#888888' });
-    this.buttons.forEach(btn => {
+    d.drawRect(0, 0, d.width, 180 * uiScale, { fill: '#16213e' });
+    d.drawRect(0, 180 * uiScale - 2, d.width, 4, { fill: '#e94560' });
+    d.drawText('Monster Tamer', cx - 160 * uiScale, 65 * uiScale, { font: `bold ${Math.round(48 * uiScale)}px system-ui`, fill: '#e94560' });
+    d.drawText('Build your team. Catch them all!', cx - 150 * uiScale, 115 * uiScale, { font: `${Math.round(18 * uiScale)}px system-ui`, fill: '#888888' });
+    this.buttons.forEach((btn, i) => {
+      btn.x = cx - 180 * uiScale; btn.y = d.height * 0.38 + i * 75 * uiScale; btn.w = 360 * uiScale; btn.h = 70 * uiScale;
       d.drawRoundRect(btn.x, btn.y, btn.w, btn.h, 8, { fill: btn.hover ? '#2563eb' : '#3b82f6' });
-      d.drawText(btn.label, btn.x + 50, btn.y + 18, { font: 'bold 22px system-ui', fill: '#ffffff' });
+      d.drawText(btn.label, btn.x + 50 * uiScale, btn.y + btn.h / 2 + 6, { font: `bold ${Math.round(20 * uiScale)}px system-ui`, fill: '#ffffff' });
     });
-    d.drawText('v1.0', cx - 15, d.height - 40, { font: '14px system-ui', fill: '#444444' });
+    d.drawText('v1.0', cx - 15, d.height - 30, { font: `${Math.round(14 * uiScale)}px system-ui`, fill: '#444444' });
   }
 }
 
@@ -379,8 +389,11 @@ class WorldScene {
   }
   handleInput() {
     if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
+    const scale = Math.min(MakkoEngine.display.width / 800, MakkoEngine.display.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    const bw = 120 * uiScale, bh = 50 * uiScale;
     const p = MakkoEngine.input.getPointerPosition();
-    if (p && p.x >= 20 && p.x <= 140 && p.y >= 20 && p.y <= 65 && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) { this.game.switchScene('menu'); return; }
+    if (p && p.x >= 20 && p.x <= 20 + bw && p.y >= 20 && p.y <= 20 + bh && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) { this.game.switchScene('menu'); return; }
     if ((MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown()) && MakkoEngine.input.mouseX > 0) {
       const mx = MakkoEngine.input.mouseX, my = MakkoEngine.input.mouseY;
       if (mx > 150 || my > 80) {
@@ -409,18 +422,22 @@ class WorldScene {
   update(dt) { this.bounceTime += dt / 1000; }
   render() {
     const d = MakkoEngine.display;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    this.backBtn = { x: 20, y: 20, w: 120 * uiScale, h: 50 * uiScale };
     d.clear('#1a1a2e');
-    for (let x = 0; x < d.width; x += 60) for (let y = 100; y < d.height; y += 60) d.drawRect(x, y, 60, 60, { fill: (Math.floor(x / 60) + Math.floor(y / 60)) % 2 === 0 ? '#1e3a1e' : '#1a321a' });
+    const tileSize = 60 * uiScale;
+    for (let x = 0; x < d.width; x += tileSize) for (let y = 100 * uiScale; y < d.height; y += tileSize) d.drawRect(x, y, tileSize, tileSize, { fill: (Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0 ? '#1e3a1e' : '#1a321a' });
     d.drawCircle(this.playerX, this.playerY + 150, 20, { fill: '#2d4a2d' });
     d.drawCircle(this.playerX, this.playerY - 100, 20, { fill: '#2d4a2d' });
     const bounce = Math.sin(this.bounceTime * 3) * 3;
-    d.drawCircle(this.playerX, this.playerY + bounce, 30, { fill: '#e94560' });
-    d.drawCircle(this.playerX - 8, this.playerY - 8 + bounce, 6, { fill: '#ffffff' });
-    d.drawCircle(this.playerX + 8, this.playerY - 8 + bounce, 6, { fill: '#ffffff' });
-    d.drawRoundRect(20, 20, 120, 45, 8, { fill: '#333333' });
-    d.drawText('← Back', 45, 35, { font: '18px system-ui', fill: '#ffffff' });
-    d.drawText(`Steps: ${this.stepCount}/8`, d.width / 2 - 60, 50, { font: '18px system-ui', fill: '#888888' });
-    d.drawText('Click to move • Random encounters!', d.width / 2 - 150, d.height - 30, { font: '16px system-ui', fill: '#555555' });
+    d.drawCircle(this.playerX, this.playerY + bounce, 28 * uiScale, { fill: '#e94560' });
+    d.drawCircle(this.playerX - 7 * uiScale, this.playerY - 7 * uiScale + bounce, 5 * uiScale, { fill: '#ffffff' });
+    d.drawCircle(this.playerX + 7 * uiScale, this.playerY - 7 * uiScale + bounce, 5 * uiScale, { fill: '#ffffff' });
+    d.drawRoundRect(this.backBtn.x, this.backBtn.y, this.backBtn.w, this.backBtn.h, 8, { fill: '#333333' });
+    d.drawText('← Back', this.backBtn.x + 25, this.backBtn.y + 18, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText(`Steps: ${this.stepCount}/8`, d.width / 2 - 60, 40, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#888888' });
+    d.drawText('Tap to move • Random encounters!', d.width / 2 - 140, d.height - 25, { font: `${Math.round(15 * uiScale)}px system-ui`, fill: '#555555' });
   }
 }
 
@@ -443,19 +460,22 @@ class BattleScene {
   handleInput() {
     if (this.resultState !== 'none') return;
     const p = MakkoEngine.input.getPointerPosition();
-    if (!p) return;
-    const actions = [
-      { x: 50, y: 900, w: 150, h: 50, type: 'attack' },
-      { x: 220, y: 900, w: 150, h: 50, type: 'capture' },
-      { x: 390, y: 900, w: 150, h: 50, type: 'defend' },
-      { x: 560, y: 900, w: 150, h: 50, type: 'flee' }
-    ];
-    actions.forEach(act => {
-      if (p.x >= act.x && p.x <= act.x + act.w && p.y >= act.y && p.y <= act.y + act.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) {
-        if (act.type === 'attack') this.doAttack();
-        else if (act.type === 'capture') this.tryCapture();
-        else if (act.type === 'defend') this.getPlayerMonster().isDefending = true;
-        else if (act.type === 'flee' && this.isWild && Math.random() < 0.5 + (this.getPlayerMonster().speed - this.getEnemyMonster().speed) * 0.001) {
+    if (!p || !p.x || !p.y) return;
+    const scale = Math.min(MakkoEngine.display.width / 800, MakkoEngine.display.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    const actionBarY = MakkoEngine.display.height * 0.83;
+    const actionW = 130 * uiScale, actionH = 45 * uiScale, actionGap = 8 * uiScale;
+    const totalActionsW = 4 * actionW + 3 * actionGap;
+    const actionStartX = (MakkoEngine.display.width - totalActionsW) / 2;
+    const actionY = actionBarY + 20 * uiScale;
+    const actionTypes = ['attack', 'capture', 'defend', 'flee'];
+    actionTypes.forEach((type, i) => {
+      const ax = actionStartX + i * (actionW + actionGap);
+      if (p.x >= ax && p.x <= ax + actionW && p.y >= actionY && p.y <= actionY + actionH && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) {
+        if (type === 'attack') this.doAttack();
+        else if (type === 'capture') this.tryCapture();
+        else if (type === 'defend') this.getPlayerMonster().isDefending = true;
+        else if (type === 'flee' && this.isWild && Math.random() < 0.5 + (this.getPlayerMonster().speed - this.getEnemyMonster().speed) * 0.001) {
           this.showMessage('Got away!'); setTimeout(() => this.game.switchScene('world'), 1500);
         }
       }
@@ -524,53 +544,63 @@ class BattleScene {
   }
   render() {
     const d = MakkoEngine.display;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
     d.clear('#1a1a2e');
-    d.drawRect(0, 0, d.width, 400, { fill: '#16213e' });
-    d.drawRect(0, 400, d.width, 200, { fill: '#1e3a1e' });
+    d.drawRect(0, 0, d.width, 380 * uiScale, { fill: '#16213e' });
+    d.drawRect(0, 380 * uiScale, d.width, 180 * uiScale, { fill: '#1e3a1e' });
     
     const p = this.getPlayerMonster(), e = this.getEnemyMonster();
     
     if (e) {
       const def = MONSTER_DEFINITIONS[e.id];
-      d.drawCircle(1620, 350, 80, { fill: '#444466' });
-      d.drawText(def.name, 1450, 50, { font: 'bold 24px system-ui', fill: '#ffffff' });
-      d.drawText(`Lv${e.level}`, 1450, 80, { font: '18px system-ui', fill: '#888888' });
+      d.drawCircle(d.width * 0.82, d.height * 0.32, 70 * uiScale, { fill: '#444466' });
+      d.drawText(def.name, d.width * 0.72, 40, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
+      d.drawText(`Lv${e.level}`, d.width * 0.72, 68, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#888888' });
       const hpPct = e.currentHp / e.maxHp;
-      d.drawRoundRect(1450, 110, 200, 20, 4, { fill: '#333333' });
-      d.drawRoundRect(1450, 110, 200 * hpPct, 20, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
+      d.drawRoundRect(d.width * 0.72, 96, 180 * uiScale, 18, 4, { fill: '#333333' });
+      d.drawRoundRect(d.width * 0.72, 96, 180 * uiScale * hpPct, 18, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
     }
     
     if (p) {
       const def = MONSTER_DEFINITIONS[p.id];
-      d.drawCircle(300, 700, 100, { fill: '#e94560' });
-      d.drawCircle(296, 692, 12, { fill: '#ffffff' });
-      d.drawCircle(308, 692, 12, { fill: '#ffffff' });
-      d.drawText(def.name, 80, 950, { font: 'bold 24px system-ui', fill: '#ffffff' });
-      d.drawText(`Lv${p.level}`, 80, 980, { font: '18px system-ui', fill: '#888888' });
+      d.drawCircle(d.width * 0.18, d.height * 0.62, 90 * uiScale, { fill: '#e94560' });
+      d.drawCircle(d.width * 0.18 - 8, d.height * 0.62 - 8, 10 * uiScale, { fill: '#ffffff' });
+      d.drawCircle(d.width * 0.18 + 8, d.height * 0.62 - 8, 10 * uiScale, { fill: '#ffffff' });
+      d.drawText(def.name, d.width * 0.06, d.height * 0.85, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
+      d.drawText(`Lv${p.level}`, d.width * 0.06, d.height * 0.88, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#888888' });
       const hpPct = p.currentHp / p.maxHp;
-      d.drawRoundRect(80, 1010, 200, 20, 4, { fill: '#333333' });
-      d.drawRoundRect(80, 1010, 200 * hpPct, 20, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
+      d.drawRoundRect(d.width * 0.06, d.height * 0.91, 180 * uiScale, 18, 4, { fill: '#333333' });
+      d.drawRoundRect(d.width * 0.06, d.height * 0.91, 180 * uiScale * hpPct, 18, 4, { fill: hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444' });
     }
     
-    d.drawText('VS', d.width / 2 - 25, 420, { font: 'bold 48px system-ui', fill: '#e94560' });
+    d.drawText('VS', d.width / 2 - 25, d.height * 0.4, { font: `bold ${Math.round(42 * uiScale)}px system-ui`, fill: '#e94560' });
     
-    d.drawRect(0, 850, d.width, 250, { fill: 'rgba(22, 33, 62, 0.95)' });
-    d.drawRect(0, 850, d.width, 4, { fill: '#e94560' });
+    const actionBarY = d.height * 0.83;
+    d.drawRect(0, actionBarY, d.width, d.height - actionBarY, { fill: 'rgba(22, 33, 62, 0.95)' });
+    d.drawRect(0, actionBarY, d.width, 4, { fill: '#e94560' });
     
-    const actions = [{ label: '⚔️ Attack', x: 50 }, { label: '🪣 Capture', x: 220 }, { label: '🛡️ Defend', x: 390 }, { label: '🏃 Flee', x: 560 }];
-    actions.forEach(a => { d.drawRoundRect(a.x, 900, 150, 50, 8, { fill: '#3b82f6' }); d.drawText(a.label, a.x + 20, 915, { font: '18px system-ui', fill: '#ffffff' }); });
-    
-    this.damageNumbers.forEach(dn => d.drawText(dn.text, dn.x - 40, dn.y, { font: 'bold 28px system-ui', fill: '#ff4444' }));
+    const actionW = 130 * uiScale, actionH = 45 * uiScale, actionGap = 8 * uiScale;
+    const totalActionsW = 4 * actionW + 3 * actionGap;
+    const actionStartX = (d.width - totalActionsW) / 2;
+    const actionY = actionBarY + 20 * uiScale;
+    const actions = ['⚔️ Attack', '🪣 Capture', '🛡️ Defend', '🏃 Flee'];
+    actions.forEach((label, i) => {
+      const ax = actionStartX + i * (actionW + actionGap);
+      d.drawRoundRect(ax, actionY, actionW, actionH, 8, { fill: '#3b82f6' });
+      d.drawText(label, ax + actionW / 2 - 45 * uiScale, actionY + actionH / 2 + 5, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
+    });
+    this.damageNumbers.forEach(dn => d.drawText(dn.text, dn.x - 40, dn.y, { font: `bold ${Math.round(26 * uiScale)}px system-ui`, fill: '#ff4444' }));
     
     if (this.messageTimer > 0) {
-      d.drawRoundRect(d.width / 2 - 100, 420, 200, 50, 8, { fill: 'rgba(0,0,0,0.7)' });
-      d.drawText(this.messageText, d.width / 2 - 60, 435, { font: 'bold 24px system-ui', fill: '#ffffff' });
+      d.drawRoundRect(d.width / 2 - 100, d.height * 0.4, 200, 48, 8, { fill: 'rgba(0,0,0,0.7)' });
+      d.drawText(this.messageText, d.width / 2 - 60, d.height * 0.4 + 12, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
     }
     
     if (this.resultState !== 'none') {
       d.drawRect(0, 0, d.width, d.height, { fill: 'rgba(0,0,0,0.5)' });
       const text = this.resultState === 'victory' ? 'VICTORY!' : this.resultState === 'captured' ? 'CAUGHT!' : 'DEFEAT';
-      d.drawText(text, d.width / 2 - 100, d.height / 2 - 30, { font: 'bold 64px system-ui', fill: this.resultState === 'defeat' ? '#ef4444' : '#22c55e' });
+      d.drawText(text, d.width / 2 - 100, d.height / 2 - 30, { font: `bold ${Math.round(56 * uiScale)}px system-ui`, fill: this.resultState === 'defeat' ? '#ef4444' : '#22c55e' });
     }
   }
 }
@@ -586,32 +616,35 @@ class PartyScene {
   update(dt) {}
   render() {
     const d = MakkoEngine.display;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    this.backBtn = { x: 20, y: 20, w: 120 * uiScale, h: 50 * uiScale };
     d.clear('#1a1a2e');
-    d.drawRect(0, 0, d.width, 100, { fill: '#16213e' });
-    d.drawRect(0, 98, d.width, 4, { fill: '#e94560' });
-    d.drawText('Party', 30, 35, { font: 'bold 36px system-ui', fill: '#ffffff' });
-    d.drawText(`💰 ${this.game.economySystem.getGold()}`, d.width - 350, 35, { font: '18px system-ui', fill: '#ffc947' });
-    d.drawText(`💎 ${this.game.economySystem.getGems()}`, d.width - 200, 35, { font: '18px system-ui', fill: '#e94560' });
+    d.drawRect(0, 0, d.width, 90 * uiScale, { fill: '#16213e' });
+    d.drawRect(0, 90 * uiScale - 2, d.width, 4, { fill: '#e94560' });
+    d.drawText('Party', 25, 32, { font: `bold ${Math.round(32 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText(`💰 ${this.game.economySystem.getGold()}`, d.width - 300 * uiScale, 30, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffc947' });
+    d.drawText(`💎 ${this.game.economySystem.getGems()}`, d.width - 180 * uiScale, 30, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#e94560' });
     
     const party = this.game.partySystem.getParty();
-    d.drawText('Your Team:', 50, 150, { font: 'bold 24px system-ui', fill: '#888888' });
+    d.drawText('Your Team:', 40, 130, { font: `bold ${Math.round(20 * uiScale)}px system-ui`, fill: '#888888' });
     
     party.forEach((monster, i) => {
       const def = MONSTER_DEFINITIONS[monster.id];
-      const y = 200 + i * 100;
-      d.drawRoundRect(50, y, 400, 80, 12, { fill: '#16213e', stroke: monster.currentHp > 0 ? '#3b82f6' : '#666666', lineWidth: 2 });
-      d.drawText(def.name, 70, y + 15, { font: 'bold 22px system-ui', fill: '#ffffff' });
-      d.drawText(`Lv. ${monster.level}`, 70, y + 45, { font: '16px system-ui', fill: '#888888' });
+      const y = 170 + i * 90 * uiScale;
+      d.drawRoundRect(40, y, 350 * uiScale, 70 * uiScale, 10, { fill: '#16213e', stroke: monster.currentHp > 0 ? '#3b82f6' : '#666666', lineWidth: 2 });
+      d.drawText(def.name, 55, y + 15, { font: `bold ${Math.round(20 * uiScale)}px system-ui`, fill: '#ffffff' });
+      d.drawText(`Lv. ${monster.level}`, 55, y + 38, { font: `${Math.round(14 * uiScale)}px system-ui`, fill: '#888888' });
       const hpPct = monster.currentHp / monster.maxHp;
-      d.drawRoundRect(70, y + 60, 200, 12, 4, { fill: '#333333' });
-      d.drawRoundRect(70, y + 60, 200 * hpPct, 12, 4, { fill: hpPct > 0.5 ? '#22c55e' : '#ef4444' });
-      if (monster.currentHp <= 0) d.drawText('💀 FAINTED', 300, y + 50, { font: '14px system-ui', fill: '#ef4444' });
+      d.drawRoundRect(55, y + 52, 180 * uiScale, 10, 3, { fill: '#333333' });
+      d.drawRoundRect(55, y + 52, 180 * uiScale * hpPct, 10, 3, { fill: hpPct > 0.5 ? '#22c55e' : '#ef4444' });
+      if (monster.currentHp <= 0) d.drawText('💀 FAINTED', 250 * uiScale, y + 45, { font: `${Math.round(13 * uiScale)}px system-ui`, fill: '#ef4444' });
     });
     
-    d.drawText(`Box: ${this.game.partySystem.getBox().length}/50`, 500, 150, { font: '20px system-ui', fill: '#888888' });
-    d.drawRoundRect(20, 20, 120, 45, 8, { fill: '#333333' });
-    d.drawText('← Back', 45, 35, { font: '18px system-ui', fill: '#ffffff' });
-    d.drawText('💚 Party healed!', d.width / 2 - 60, d.height - 50, { font: '16px system-ui', fill: '#22c55e' });
+    d.drawText(`Box: ${this.game.partySystem.getBox().length}/50`, 420 * uiScale, 130, { font: `${Math.round(18 * uiScale)}px system-ui`, fill: '#888888' });
+    d.drawRoundRect(this.backBtn.x, this.backBtn.y, this.backBtn.w, this.backBtn.h, 8, { fill: '#333333' });
+    d.drawText('← Back', this.backBtn.x + 22, this.backBtn.y + 16, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText('💚 Party healed!', d.width / 2 - 55, d.height - 40, { font: `${Math.round(15 * uiScale)}px system-ui`, fill: '#22c55e' });
   }
 }
 
@@ -621,33 +654,37 @@ class ShopScene {
   handleInput() {
     if (MakkoEngine.input.isKeyPressed('Escape')) { this.game.switchScene('menu'); return; }
     const p = MakkoEngine.input.getPointerPosition();
-    if (p && p.x >= this.backBtn.x && p.x <= this.backBtn.x + this.backBtn.w && p.y >= this.backBtn.y && p.y <= this.backBtn.y + this.backBtn.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
+    if (p && this.backBtn && p.x >= this.backBtn.x && p.x <= this.backBtn.x + this.backBtn.w && p.y >= this.backBtn.y && p.y <= this.backBtn.y + this.backBtn.h && (MakkoEngine.input.isKeyPressed('Space') || MakkoEngine.input.isPointerDown())) this.game.switchScene('menu');
   }
   update(dt) {}
   render() {
     const d = MakkoEngine.display, econ = this.game.economySystem;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    this.backBtn = { x: 20, y: 20, w: 120 * uiScale, h: 50 * uiScale };
     d.clear('#1a1a2e');
-    d.drawRect(0, 0, d.width, 120, { fill: '#16213e' });
-    d.drawRect(0, 118, d.width, 4, { fill: '#e94560' });
-    d.drawText('🛒 Shop', 30, 40, { font: 'bold 36px system-ui', fill: '#ffffff' });
-    d.drawText(`💰 ${econ.getGold()} Gold`, d.width - 250, 40, { font: '24px system-ui', fill: '#ffc947' });
-    d.drawText(`💎 ${econ.getGems()} Gems`, d.width - 120, 40, { font: '24px system-ui', fill: '#e94560' });
+    d.drawRect(0, 0, d.width, 100 * uiScale, { fill: '#16213e' });
+    d.drawRect(0, 100 * uiScale - 2, d.width, 4, { fill: '#e94560' });
+    d.drawText('🛒 Shop', 25, 38, { font: `bold ${Math.round(32 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText(`💰 ${econ.getGold()} Gold`, d.width - 220 * uiScale, 36, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#ffc947' });
+    d.drawText(`💎 ${econ.getGems()} Gems`, d.width - 110 * uiScale, 36, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#e94560' });
     
     SHOP_ITEMS.forEach((item, i) => {
       const col = i % 3, row = Math.floor(i / 3);
-      const x = 80 + col * 220, y = 200 + row * 140;
+      const x = 60 * uiScale + col * 200 * uiScale, y = 170 * uiScale + row * 130 * uiScale;
+      const itemW = 185 * uiScale, itemH = 115 * uiScale;
       const canAfford = econ.getGold() >= item.price;
-      d.drawRoundRect(x, y, 200, 120, 12, { fill: '#16213e', stroke: canAfford ? '#3b82f6' : '#666666', lineWidth: 2 });
-      d.drawText(item.type === 'ball' ? '🪣' : '💊', x + 20, y + 15, { font: '40px system-ui' });
-      d.drawText(item.name, x + 80, y + 20, { font: 'bold 18px system-ui', fill: '#ffffff' });
-      d.drawText(item.effect, x + 80, y + 45, { font: '14px system-ui', fill: '#888888' });
-      d.drawText(`${item.price} 💰`, x + 20, y + 85, { font: 'bold 20px system-ui', fill: canAfford ? '#ffc947' : '#ef4444' });
+      d.drawRoundRect(x, y, itemW, itemH, 10, { fill: '#16213e', stroke: canAfford ? '#3b82f6' : '#666666', lineWidth: 2 });
+      d.drawText(item.type === 'ball' ? '🪣' : '💊', x + 15, y + 15, { font: `${Math.round(32 * uiScale)}px system-ui` });
+      d.drawText(item.name, x + 70 * uiScale, y + 18, { font: `bold ${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
+      d.drawText(item.effect, x + 70 * uiScale, y + 40, { font: `${Math.round(13 * uiScale)}px system-ui`, fill: '#888888' });
+      d.drawText(`${item.price} 💰`, x + 15, y + 75, { font: `bold ${Math.round(18 * uiScale)}px system-ui`, fill: canAfford ? '#ffc947' : '#ef4444' });
       const owned = econ.getItemCount(item.id);
-      if (owned > 0) d.drawText(`Owned: ${owned}`, x + 120, y + 85, { font: '14px system-ui', fill: '#888888' });
+      if (owned > 0) d.drawText(`Owned: ${owned}`, x + 100 * uiScale, y + 75, { font: `${Math.round(13 * uiScale)}px system-ui`, fill: '#888888' });
     });
     
-    d.drawRoundRect(20, 20, 120, 45, 8, { fill: '#333333' });
-    d.drawText('← Back', 45, 35, { font: '18px system-ui', fill: '#ffffff' });
+    d.drawRoundRect(this.backBtn.x, this.backBtn.y, this.backBtn.w, this.backBtn.h, 8, { fill: '#333333' });
+    d.drawText('← Back', this.backBtn.x + 22, this.backBtn.y + 16, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
   }
 }
 
@@ -667,29 +704,32 @@ class PvPArenaScene {
   }
   render() {
     const d = MakkoEngine.display, cx = d.width / 2, cy = d.height / 2;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    this.backBtn = { x: 20, y: 20, w: 120 * uiScale, h: 50 * uiScale };
     d.clear('#1a1a2e');
-    d.drawCircle(cx, cy + 50, 200, { stroke: '#e94560', lineWidth: 4 });
-    d.drawCircle(cx, cy + 50, 180, { stroke: '#3b82f6', lineWidth: 2 });
-    d.drawRect(0, 0, d.width, 100, { fill: '#16213e' });
-    d.drawRect(0, 98, d.width, 4, { fill: '#e94560' });
-    d.drawText('⚔️ PvP Arena', 30, 40, { font: 'bold 36px system-ui', fill: '#ffffff' });
-    d.drawText(`💎 ${this.game.economySystem.getGems()}`, d.width - 120, 40, { font: '24px system-ui', fill: '#e94560' });
-    d.drawText('🏆 Bronze', cx - 50, 40, { font: '20px system-ui', fill: '#cd7f32' });
+    d.drawCircle(cx, cy + 40 * uiScale, 160 * uiScale, { stroke: '#e94560', lineWidth: Math.max(3, 4 * uiScale) });
+    d.drawCircle(cx, cy + 40 * uiScale, 140 * uiScale, { stroke: '#3b82f6', lineWidth: 2 });
+    d.drawRect(0, 0, d.width, 90 * uiScale, { fill: '#16213e' });
+    d.drawRect(0, 90 * uiScale - 2, d.width, 4, { fill: '#e94560' });
+    d.drawText('⚔️ PvP Arena', 25, 36, { font: `bold ${Math.round(32 * uiScale)}px system-ui`, fill: '#ffffff' });
+    d.drawText(`💎 ${this.game.economySystem.getGems()}`, d.width - 110 * uiScale, 34, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#e94560' });
+    d.drawText('🏆 Bronze', cx - 45, 34, { font: `${Math.round(18 * uiScale)}px system-ui`, fill: '#cd7f32' });
     
     if (this.isSearching) {
       const angle = (this.searchTime * 2) % (Math.PI * 2);
-      d.drawArc(cx, cy, 80, angle, angle + Math.PI * 1.5, { stroke: '#e94560', lineWidth: 6 });
-      d.drawText('🔍 Searching...', cx - 80, cy + 120, { font: '24px system-ui', fill: '#ffffff' });
+      d.drawArc(cx, cy, 70 * uiScale, angle, angle + Math.PI * 1.5, { stroke: '#e94560', lineWidth: Math.max(4, 6 * uiScale) });
+      d.drawText('🔍 Searching...', cx - 70, cy + 110, { font: `${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
     } else {
-      d.drawText('Test your team against other tamers!', cx - 200, cy - 50, { font: '24px system-ui', fill: '#888888' });
-      d.drawRoundRect(cx - 125, cy + 100, 250, 70, 8, { fill: '#3b82f6' });
-      d.drawText('⚔️ Find Match', cx - 60, cy + 120, { font: 'bold 24px system-ui', fill: '#ffffff' });
+      d.drawText('Test your team against other tamers!', cx - 180, cy - 40, { font: `${Math.round(20 * uiScale)}px system-ui`, fill: '#888888' });
+      d.drawRoundRect(cx - 110 * uiScale, cy + 90, 220 * uiScale, 65 * uiScale, 8, { fill: '#3b82f6' });
+      d.drawText('⚔️ Find Match', cx - 55, cy + 110, { font: `bold ${Math.round(22 * uiScale)}px system-ui`, fill: '#ffffff' });
       const party = this.game.partySystem.getParty();
-      d.drawText('Your Team:', 50, 150, { font: 'bold 20px system-ui', fill: '#888888' });
-      party.forEach((m, i) => d.drawText(`• ${m.id} Lv${m.level}`, 50, 180 + i * 30, { font: '16px system-ui', fill: '#ffffff' }));
+      d.drawText('Your Team:', 40, 130, { font: `bold ${Math.round(18 * uiScale)}px system-ui`, fill: '#888888' });
+      party.forEach((m, i) => d.drawText(`• ${m.id} Lv${m.level}`, 40, 160 + i * 28, { font: `${Math.round(15 * uiScale)}px system-ui`, fill: '#ffffff' }));
     }
-    d.drawRoundRect(20, 20, 120, 45, 8, { fill: '#333333' });
-    d.drawText('← Back', 45, 35, { font: '18px system-ui', fill: '#ffffff' });
+    d.drawRoundRect(this.backBtn.x, this.backBtn.y, this.backBtn.w, this.backBtn.h, 8, { fill: '#333333' });
+    d.drawText('← Back', this.backBtn.x + 22, this.backBtn.y + 16, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
   }
 }
 
@@ -704,20 +744,32 @@ class SettingsScene {
   update(dt) {}
   render() {
     const d = MakkoEngine.display, cx = d.width / 2;
+    const scale = Math.min(d.width / 800, d.height / 600);
+    const uiScale = Math.max(0.5, scale);
+    this.backBtn = { x: 20, y: 20, w: 120 * uiScale, h: 50 * uiScale };
     d.clear('#1a1a2e');
-    d.drawRect(0, 0, d.width, 100, { fill: '#16213e' });
-    d.drawRect(0, 98, d.width, 4, { fill: '#e94560' });
-    d.drawText('⚙️ Settings', 30, 40, { font: 'bold 36px system-ui', fill: '#ffffff' });
-    d.drawRoundRect(cx - 250, 150, 500, 400, 16, { fill: '#16213e', stroke: '#3b82f6', lineWidth: 2 });
-    d.drawText('🔊 Sound', cx - 200, 180, { font: 'bold 24px system-ui', fill: '#ffffff' });
-    d.drawText('Music: On', cx - 170, 220, { font: '18px system-ui', fill: '#888888' });
-    d.drawText('🖥️ Display', cx - 200, 300, { font: 'bold 24px system-ui', fill: '#ffffff' });
-    d.drawText('Canvas: 1920x1080', cx - 170, 340, { font: '18px system-ui', fill: '#888888' });
-    d.drawText('Touch: Enabled', cx - 170, 370, { font: '18px system-ui', fill: '#888888' });
-    d.drawText('💾 Save Data', cx - 200, 420, { font: 'bold 24px system-ui', fill: '#ffffff' });
-    d.drawText(`Party: ${this.game.partySystem.getParty().length} monsters`, cx - 170, 460, { font: '18px system-ui', fill: '#888888' });
-    d.drawRoundRect(20, 20, 120, 45, 8, { fill: '#333333' });
-    d.drawText('← Back', 45, 35, { font: '18px system-ui', fill: '#ffffff' });
+    d.drawRect(0, 0, d.width, 90 * uiScale, { fill: '#16213e' });
+    d.drawRect(0, 90 * uiScale - 2, d.width, 4, { fill: '#e94560' });
+    d.drawText('⚙️ Settings', 25, 36, { font: `bold ${Math.round(32 * uiScale)}px system-ui`, fill: '#ffffff' });
+    const panelW = 450 * uiScale, panelH = 380 * uiScale;
+    d.drawRoundRect(cx - panelW / 2, 130 * uiScale, panelW, panelH, 14, { fill: '#16213e', stroke: '#3b82f6', lineWidth: 2 });
+    const sections = [
+      { label: '🔊 Sound', items: ['Music: On'] },
+      { label: '🖥️ Display', items: ['Canvas: 1920x1080', 'Touch: Enabled'] },
+      { label: '💾 Save Data', items: [`Party: ${this.game.partySystem.getParty().length} monsters`] }
+    ];
+    let yOff = 150 * uiScale;
+    sections.forEach((sec, si) => {
+      d.drawText(sec.label, cx - 180 * uiScale, yOff, { font: `bold ${Math.round(20 * uiScale)}px system-ui`, fill: '#ffffff' });
+      yOff += 40 * uiScale;
+      sec.items.forEach(item => {
+        d.drawText(item, cx - 150 * uiScale, yOff, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#888888' });
+        yOff += 35 * uiScale;
+      });
+      if (si < sections.length - 1) yOff += 15 * uiScale;
+    });
+    d.drawRoundRect(this.backBtn.x, this.backBtn.y, this.backBtn.w, this.backBtn.h, 8, { fill: '#333333' });
+    d.drawText('← Back', this.backBtn.x + 22, this.backBtn.y + 16, { font: `${Math.round(16 * uiScale)}px system-ui`, fill: '#ffffff' });
   }
 }
 
