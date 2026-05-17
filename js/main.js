@@ -329,7 +329,7 @@ class StartScene {
   render() {
     const d = MakkoEngine.display, cx = d.width / 2, ty = d.height * 0.25;
     const scale = Math.min(d.width / 800, d.height / 600);
-    const uiScale = Math.max(0.5, scale);
+    const uiScale = Math.max(0.5, Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
     d.clear('#1a1a2e');
     d.drawCircle(cx, ty + 60, 180 * uiScale, { fill: '#16213e', stroke: '#e94560', lineWidth: Math.max(2, 3 * uiScale) });
     d.drawCircle(cx, ty + 60, 160 * uiScale, { stroke: '#3b82f6', lineWidth: 2 });
